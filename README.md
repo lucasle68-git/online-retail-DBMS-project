@@ -56,34 +56,13 @@ The database comprises **18 entities** organized into two integrated systems:
 - Promotions: `Coupon`, `ReturnRequest`
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    STAR SCHEMA OVERVIEW                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│    ┌──────────┐      ┌─────────────┐      ┌──────────┐        │
-│    │ Customer │──────│   ORDER     │──────│ Payment  │        │
-│    └──────────┘      │ (Fact Table)│      └──────────┘        │
-│                      └─────────────┘                           │
-│                             │                                   │
-│              ┌──────────────┼──────────────┐                   │
-│              │              │              │                   │
-│         ┌────▼────┐   ┌─────▼─────┐  ┌────▼────┐             │
-│         │OrderItem│   │  Coupon   │  │Delivery │             │
-│         └────┬────┘   └───────────┘  └─────────┘             │
-│              │                                                 │
-│     ┌────────┴────────┐                                       │
-│     │                 │                                       │
-│ ┌───▼───┐      ┌──────▼──────┐                               │
-│ │Product│      │ComboProduct │                               │
-│ └───────┘      └─────────────┘                               │
-│                                                               │
-└───────────────────────────────────────────────────────────────┘
 ```
 
 ## Entity Relationship Diagrams
+![20A54EBF-370D-4522-B388-D77DECDC6A41_1_105_c](https://github.com/user-attachments/assets/88def324-bbf0-4b64-a562-3a346b718df4)
 
 ### Core Transaction Flow
-![Core Transaction ERD](erd/core_transaction_erd.png)
+
 
 ### Supporting Systems
 ![Supporting Systems ERD](erd/supporting_systems_erd.png)
