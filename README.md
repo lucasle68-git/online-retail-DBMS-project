@@ -1,8 +1,8 @@
-# 🛒 Database Management System for Online Retail
+# Database Management System for Online Retail
 
 A comprehensive MySQL database system designed for **The Gentleman's Hub** - a men's grooming and wardrobe e-commerce platform with multi-channel operations including online retail, subscription boxes, and loyalty programs.
 
-## 📋 Table of Contents
+## Table of Contents
 - [Overview](#overview)
 - [Business Context](#business-context)
 - [Database Architecture](#database-architecture)
@@ -191,11 +191,11 @@ FROM Product;
 
 | Role | Payment | Product | Customer | Orders |
 |------|---------|---------|----------|--------|
-| Finance Head | ✅ Full | ✅ Full | SELECT | SELECT |
-| Marketing Head | 🔒 Masked | 🔒 Masked | SELECT | SELECT |
-| Customer Service | 🔒 Masked | 🔒 Masked | SELECT | SELECT/UPDATE |
-| Warehouse Head | ❌ None | 🔒 Masked | ❌ None | SELECT |
-| Product Head | ❌ None | ✅ Full (excl. CostPrice UPDATE) | ❌ None | SELECT |
+| Finance Head | Full | Full | SELECT | SELECT |
+| Marketing Head | Masked | Masked | SELECT | SELECT |
+| Customer Service | Masked | Masked | SELECT | SELECT/UPDATE |
+| Warehouse Head | None | Masked | None | SELECT |
+| Product Head | None | Full (excl. CostPrice UPDATE) | None | SELECT |
 
 ## Performance Optimization
 
@@ -227,8 +227,8 @@ CREATE INDEX idx_delivery_zone ON Delivery(ZoneID, DeliveryStatus);
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/database-management-retail.git
-cd database-management-retail
+git clone https://github.com/lucasle68-git/online-retail-DBMS-project.git
+cd online-retail-DBMS-project
 
 # 2. Create database and schema
 mysql -u root -p < sql/01_schema.sql
