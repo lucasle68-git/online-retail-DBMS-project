@@ -1,4 +1,4 @@
-# 📚 Data Dictionary
+# Data Dictionary
 
 Complete documentation of all 18 tables in The Gentleman's Hub database.
 
@@ -322,32 +322,6 @@ Complete documentation of all 18 tables in The Gentleman's Hub database.
 | UsageCount | INT | DEFAULT 0 | Current redemptions |
 | IsActive | BOOLEAN | DEFAULT 1 | Coupon active status |
 | CreatedDate | DATETIME | DEFAULT CURRENT_TIMESTAMP | Coupon created date |
-
----
-
-## Relationships Summary
-
-```
-Customer (1) ─────────── (M) Address
-    │
-    ├──── (1) ─────────── (M) Order
-    │                        │
-    │                        ├──── (M) OrderItem ──── (1) Product
-    │                        │           │
-    │                        │           └──── (1) ComboProduct
-    │                        │
-    │                        ├──── (1) Payment
-    │                        ├──── (1) Delivery ──── (1) DeliveryZone
-    │                        └──── (0..1) Coupon
-    │
-    ├──── (1) ─────────── (M) ConsentRecord
-    ├──── (1) ─────────── (1) LoyaltyAccount ──── (M) LoyaltyTransaction
-    └──── (1) ─────────── (M) Subscription
-
-Product (1) ─────────── (1) ProductCategory
-    │
-    └──── (M) ComboProductItem ──── (1) ComboProduct
-```
 
 ---
 
