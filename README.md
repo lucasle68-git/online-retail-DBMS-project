@@ -64,13 +64,13 @@ The database comprises **18 entities** organized into two integrated systems:
 
 ## Key Features
 
-### 🔒 Security & Compliance
+### Security & Compliance
 - **PCI-DSS Compliant Payment Processing**: Card tokenization, no CVV storage
 - **GDPR Consent Tracking**: Granular consent per channel (Website, Email, Mobile)
 - **Role-Based Access Control**: 5 department-specific access levels
 - **Masked Views**: Sensitive data protection for non-authorized roles
 
-### 📊 Business Intelligence Ready
+### Business Intelligence Ready
 - Pre-built analytical queries for:
   - Customer segmentation (RFM Analysis)
   - Revenue breakdown by channel
@@ -78,7 +78,7 @@ The database comprises **18 entities** organized into two integrated systems:
   - Inventory alerts
   - Delivery performance metrics
 
-### ⚡ Performance Optimized
+### Performance Optimized
 - Composite indexes on high-frequency JOIN operations
 - 25% query performance improvement demonstrated
 - Strategic denormalization for historical pricing
@@ -278,12 +278,13 @@ database-management-retail/
 
 ---
 
-## 📫 Contact
+## Contact
 
 **Lucas Le** - MSc Business Analytics @ University of Glasgow
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin)](https://www.linkedin.com/in/lucasle68/)
-[![Email](https://img.shields.io/badge/Email-Contact-EA4335?logo=gmail)](mailto:luong.ldd.work@gmail.com)
+Glasgow, Scotland  
+luong.ldd.work@gmail.com  
+[LinkedIn](https://www.linkedin.com/in/lucasle68/)
 
 ---
 
