@@ -59,13 +59,11 @@ The database comprises **18 entities** organized into two integrated systems:
 ```
 
 ## Entity Relationship Diagrams
+### Core Transaction Flow
 ![20A54EBF-370D-4522-B388-D77DECDC6A41_1_105_c](https://github.com/user-attachments/assets/88def324-bbf0-4b64-a562-3a346b718df4)
 
-### Core Transaction Flow
-
-
 ### Supporting Systems
-![Supporting Systems ERD](erd/supporting_systems_erd.png)
+![815E1E1D-A7B1-4077-8544-F4F1E2AB8DB0_1_105_c](https://github.com/user-attachments/assets/42aed769-b2d9-4b1d-a01f-cd8492126f89)
 
 ## Key Features
 
