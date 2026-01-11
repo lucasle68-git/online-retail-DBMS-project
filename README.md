@@ -245,14 +245,11 @@ mysql -u root -p < sql/03_security_optimization.sql
 database-management-retail/
 ├── README.md
 ├── sql/
-│   ├── 01_schema.sql          # Database schema (18 tables)
+│   ├── 01_schema.sql          # Database schema (18 tables) & Advanced query for analytics
 │   ├── 02_sample_data.sql     # Sample data (~50+ rows/table)
 │   └── 03_security_optimization.sql  # RBAC & indexes
 ├── docs/
 │   └── data_dictionary.md     # Complete column documentation
-└── erd/
-    ├── core_transaction_erd.png
-    └── supporting_systems_erd.png
 ```
 
 ## Technologies Used
