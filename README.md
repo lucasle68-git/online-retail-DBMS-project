@@ -55,9 +55,6 @@ The database comprises **18 entities** organized into two integrated systems:
 - Inventory: `Inventory`
 - Promotions: `Coupon`, `ReturnRequest`
 
-```
-```
-
 ## Entity Relationship Diagrams
 ### Core Transaction Flow
 ![20A54EBF-370D-4522-B388-D77DECDC6A41_1_105_c](https://github.com/user-attachments/assets/88def324-bbf0-4b64-a562-3a346b718df4)
