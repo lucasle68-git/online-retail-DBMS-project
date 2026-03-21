@@ -1,3 +1,303 @@
+-- CREATE DATABASE
+CREATE DATABASE IF NOT EXISTS gentlemans_hub_db
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+USE gentlemans_hub_db;
+
+-- Table 1: Order (Star Schema Fact Table)
+-- Central transaction hub connecting Customer, Payment, Coupon dimensions
+
+CREATE TABLE `Order` (
+    OrderID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    BillingID INT NOT NULL,
+    CouponID INT,
+    OrderDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    OrderType ENUM('StandardPurchase','SubscriptionBox','LoyaltyRedemption','GiftPurchase') NOT NULL, # ENUM to restrict the data entry error
+    OrderStatus ENUM('Pending','Paid','Shipped','Cancelled','Delivered') DEFAULT 'Pending',
+    TaxAmount DECIMAL(10,2) DEFAULT 0.00,
+    ShippingFee DECIMAL(10,2) DEFAULT 0.00,
+    PaymentStatus ENUM('Authorized','Captured','Failed') DEFAULT 'Authorized',
+    TotalAmount DECIMAL(10,2) NOT NULL CHECK (TotalAmount >= 0),
+    INDEX idx_customer_date (CustomerID, OrderDate), # INDEX To create internal lookup list, faster search
+    INDEX idx_status (OrderStatus),
+    INDEX idx_type (OrderType),
+    INDEX idx_order_date (OrderDate)
+) ENGINE=InnoDB COMMENT='Star schema fact table - transaction hub';
+
+-- Table 2: OrderItem (Junction Table - Order Line Items)
+CREATE TABLE OrderItem (
+    OrderItemID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    ComboID INT,
+    ProductID INT,
+    Quantity INT NOT NULL CHECK (Quantity > 0),
+    UnitPrice DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE CASCADE,
+    CHECK ((ProductID IS NOT NULL AND ComboID IS NULL) OR (ProductID IS NULL AND ComboID IS NOT NULL)), # Remove duplicated data
+    INDEX idx_order (OrderID),
+    INDEX idx_product (ProductID),
+    INDEX idx_combo (ComboID)
+) ENGINE=InnoDB COMMENT='Order line items - fact-dimension junction';
+
+
+-- Customer Domain
+-- Table 3: Customer Dimension
+CREATE TABLE Customer (
+    CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(100) NOT NULL,
+    LastName VARCHAR(100) NOT NULL,
+    Email VARCHAR(255) NOT NULL UNIQUE,
+    PhoneNumber VARCHAR(20),
+    DOB DATE,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    LastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (Email),
+    INDEX idx_lastname (LastName),
+    INDEX idx_created (CreatedDate)
+) ENGINE=InnoDB COMMENT='Master customer profiles - star schema dimension';
+
+-- Table 4: Address
+CREATE TABLE Address (
+    AddressID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    AddressLine VARCHAR(200) NOT NULL,
+    City VARCHAR(100) NOT NULL,
+    Postcode VARCHAR(10) NOT NULL,
+    Country VARCHAR(50) DEFAULT 'United Kingdom',
+    IsDefault BOOLEAN DEFAULT 0,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE CASCADE,
+    INDEX idx_customer (CustomerID),
+    INDEX idx_postcode (Postcode)
+) ENGINE=InnoDB COMMENT='Normalized customer addresses';
+
+-- Product Domain
+-- Table 5: ProductCategory 
+CREATE TABLE ProductCategory (
+    CategoryID INT AUTO_INCREMENT PRIMARY KEY,
+    ParentCategoryID INT,
+    CategoryName VARCHAR(100) NOT NULL,
+    Description VARCHAR(200),
+    IsActive BOOLEAN DEFAULT 1,
+    FOREIGN KEY (ParentCategoryID) REFERENCES ProductCategory(CategoryID) ON DELETE SET NULL,
+    INDEX idx_parent (ParentCategoryID),
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='Product category hierarchy';
+
+-- Table 6: Product
+CREATE TABLE Product (
+    ProductID INT AUTO_INCREMENT PRIMARY KEY,
+    CategoryID INT NOT NULL,
+    ProductName VARCHAR(100) NOT NULL,
+    ProductDescription VARCHAR(200),
+    UnitPrice DECIMAL(10,2) NOT NULL CHECK (UnitPrice > 0),
+    CostPrice DECIMAL(10,2) CHECK (CostPrice >= 0),
+    SKU VARCHAR(50) NOT NULL UNIQUE,
+    IsActive BOOLEAN DEFAULT 1,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CategoryID) REFERENCES ProductCategory(CategoryID) ON DELETE RESTRICT,
+    INDEX idx_category (CategoryID),
+    INDEX idx_sku (SKU),
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='Product catalog - star schema dimension';
+
+-- Table 7: ComboProduct 
+CREATE TABLE ComboProduct (
+    ComboID INT AUTO_INCREMENT PRIMARY KEY,
+    ComboName VARCHAR(100) NOT NULL,
+    ComboDescription VARCHAR(200),
+    StandardPrice DECIMAL(10,2) NOT NULL,
+    ComboPrice DECIMAL(10,2) NOT NULL,
+    IsActive BOOLEAN DEFAULT 1,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CHECK (ComboPrice < StandardPrice),
+    CHECK (ComboPrice > 0),
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='Bundled product offerings';
+
+-- Table 8: ComboProductItem
+CREATE TABLE ComboProductItem (
+    ComboItemID INT AUTO_INCREMENT PRIMARY KEY,
+    ComboID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL CHECK (Quantity > 0),
+    IsSubstitutable BOOLEAN DEFAULT 0,
+    FOREIGN KEY (ComboID) REFERENCES ComboProduct(ComboID) ON DELETE CASCADE,
+    FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE RESTRICT,
+    UNIQUE KEY unique_combo_product (ComboID, ProductID),
+    INDEX idx_combo (ComboID),
+    INDEX idx_product (ProductID)
+) ENGINE=InnoDB COMMENT='Combo contents - junction table';
+
+-- Payment Domain
+-- Table 9: Payment (PCI-DSS Compliant Payment Processing)
+CREATE TABLE Payment (
+    BillingID INT AUTO_INCREMENT PRIMARY KEY,
+    PaymentDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PaymentType VARCHAR(20) NOT NULL,
+    PaymentMethodType ENUM('Visa','Mastercard','Amex','PayPal','ApplePay') NOT NULL,
+    CardToken VARCHAR(255),
+    CardLastFour VARCHAR(4),
+    CardBrand VARCHAR(50),
+    CardExpiryMonth INT CHECK (CardExpiryMonth BETWEEN 1 AND 12),
+    CardExpiryYear INT CHECK (CardExpiryYear >= 2025),
+    TransactionReference VARCHAR(100),
+    PaymentStatus ENUM('Pending','Authorized','Captured','Failed','Refunded') DEFAULT 'Pending',
+    INDEX idx_date (PaymentDate),
+    INDEX idx_status (PaymentStatus)
+) ENGINE=InnoDB COMMENT='Payment processing - PCI-DSS compliant';
+
+-- Delivery Domain
+-- Table 10: DeliveryZone
+CREATE TABLE DeliveryZone (
+    ZoneID INT AUTO_INCREMENT PRIMARY KEY,
+    ZoneName VARCHAR(100) NOT NULL,
+    StandardDeliveryDays INT NOT NULL DEFAULT 3,
+    MaxDailyCapacity INT NOT NULL,
+    PostcodePrefixes VARCHAR(255) NOT NULL,
+    IsActive BOOLEAN DEFAULT 1,
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='UK delivery zones - capacity management';
+
+-- Table 11: Delivery (Delivery Tracking)
+CREATE TABLE Delivery (
+    DeliveryID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL UNIQUE,
+    ZoneID INT NOT NULL,
+    ScheduledDeliveryDate DATE NOT NULL,
+    ScheduledTimeSlot VARCHAR(50),
+    ActualDeliveryDate DATETIME,
+    DeliveryStatus ENUM('Processing','InTransit','Delivered','Failed') DEFAULT 'Processing',
+    TrackingNumber VARCHAR(100) UNIQUE,
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE CASCADE,
+    FOREIGN KEY (ZoneID) REFERENCES DeliveryZone(ZoneID) ON DELETE RESTRICT,
+    INDEX idx_order (OrderID),
+    INDEX idx_zone (ZoneID),
+    INDEX idx_status (DeliveryStatus),
+    INDEX idx_scheduled_date (ScheduledDeliveryDate)
+) ENGINE=InnoDB COMMENT='Delivery tracking';
+
+-- Phase 2: Supporting Systems
+
+-- Loyalty Domain
+-- Table 12: LoyaltyAccount 
+CREATE TABLE LoyaltyAccount (
+    LoyaltyAccountID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    CurrentPointsBalance INT DEFAULT 0,
+    TotalPointsEarned INT DEFAULT 0,
+    TierLevel VARCHAR(20) DEFAULT 'Bronze',
+    IsActive BOOLEAN DEFAULT 1,
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE CASCADE,
+    INDEX idx_customer (CustomerID),
+    INDEX idx_tier (TierLevel),
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='Customer loyalty profiles';
+
+-- Table 13: LoyaltyTransactions 
+CREATE TABLE LoyaltyTransaction (
+    TransactionID INT AUTO_INCREMENT PRIMARY KEY,
+    LoyaltyAccountID INT NOT NULL,
+    OrderID INT,
+    TotalPointsEarned INT NOT NULL,
+    TierLevel ENUM('Bronze','Silver','Gold') NOT NULL,
+    IsActive BOOLEAN DEFAULT 1,
+    TransactionDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (LoyaltyAccountID) REFERENCES LoyaltyAccount(LoyaltyAccountID) ON DELETE CASCADE,
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE SET NULL,
+    INDEX idx_account (LoyaltyAccountID),
+    INDEX idx_order (OrderID),
+    INDEX idx_date (TransactionDate)
+) ENGINE=InnoDB COMMENT='Loyalty point transaction history';
+
+-- Subscription System
+-- Table 14: Subscription 
+CREATE TABLE Subscription (
+    SubscriptionID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    ProductID INT,
+    ComboID INT,
+    StartDate DATE NOT NULL,
+    CancellationDate DATE,
+    CancellationReason VARCHAR(255),
+    SubscriptionStatus ENUM('Active','Paused','Cancelled') DEFAULT 'Active',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE RESTRICT,
+    FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE RESTRICT,
+    FOREIGN KEY (ComboID) REFERENCES ComboProduct(ComboID) ON DELETE RESTRICT,
+    CHECK ((ProductID IS NOT NULL AND ComboID IS NULL) OR (ProductID IS NULL AND ComboID IS NOT NULL)),
+    INDEX idx_customer (CustomerID),
+    INDEX idx_product (ProductID),
+    INDEX idx_combo (ComboID),
+    INDEX idx_status (SubscriptionStatus),
+    INDEX idx_start_date (StartDate)
+) ENGINE=InnoDB COMMENT='Subscription management';
+
+-- Inventory Management
+-- Table 15: Inventory
+CREATE TABLE Inventory (
+    InventoryID INT AUTO_INCREMENT PRIMARY KEY,
+    ProductID INT NOT NULL,
+    LocationName VARCHAR(100) NOT NULL,
+    LocationPostcode VARCHAR(10) NOT NULL,
+    QuantityOnHand INT DEFAULT 0,
+    QuantityReserved INT DEFAULT 1,
+    QuantityAvailable INT AS (QuantityOnHand - QuantityReserved) STORED,
+    ReorderPoint INT DEFAULT 10,
+    LastStockCheck DATETIME,
+    FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE CASCADE,
+    INDEX idx_product (ProductID),
+    INDEX idx_location (LocationName),
+    INDEX idx_available (QuantityAvailable)
+) ENGINE=InnoDB COMMENT='Product inventory by location';
+
+-- Order Support Systems
+-- Table 16: ReturnRequest
+CREATE TABLE ReturnRequest (
+    ReturnID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    RequestDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CompletedDate DATETIME,
+    ReturnMethod ENUM('Dropoff','Pickup','Mail') NOT NULL,
+    ReturnReason VARCHAR(255),
+    ReturnStatus ENUM('Requested','Approved','Refunded') DEFAULT 'Requested',
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE CASCADE,
+    INDEX idx_order (OrderID),
+    INDEX idx_status (ReturnStatus),
+    INDEX idx_request_date (RequestDate)
+) ENGINE=InnoDB COMMENT='Product return requests';
+
+-- Table 17: Coupon (Discount Codes)
+CREATE TABLE Coupon (
+    CouponID INT AUTO_INCREMENT PRIMARY KEY,
+    Code VARCHAR(20) NOT NULL UNIQUE,
+    Description VARCHAR(200),
+    DiscountType ENUM('Percent','FixedAmount') NOT NULL,
+    DiscountValue DECIMAL(10,2) NOT NULL,
+    MinOrderValue DECIMAL(10,2) DEFAULT 0.00,
+    UsageLimit INT,
+    UsageCount INT DEFAULT 0,
+    IsActive BOOLEAN DEFAULT 1,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_code (Code),
+    INDEX idx_active (IsActive)
+) ENGINE=InnoDB COMMENT='Promotional discount codes';
+
+-- Table 18: ConsentRecord
+CREATE TABLE ConsentRecord (
+    ConsentID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    ConsentType ENUM('Marketing','Cookies','Terms') NOT NULL,
+    ConsentGiven BOOLEAN NOT NULL DEFAULT 0,
+    ConsentDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE CASCADE,
+    INDEX idx_customer (CustomerID),
+    INDEX idx_type (ConsentType),
+    INDEX idx_date (ConsentDate)
+) ENGINE=InnoDB COMMENT='GDPR consent tracking across channels';
+
+
 -- INSERTING DATA DUMP
 
 SET FOREIGN_KEY_CHECKS = 0;
