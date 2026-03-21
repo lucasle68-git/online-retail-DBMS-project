@@ -230,14 +230,12 @@ CREATE INDEX idx_delivery_zone ON Delivery(ZoneID, DeliveryStatus);
 git clone https://github.com/lucasle68-git/online-retail-DBMS-project.git
 cd online-retail-DBMS-project
 
-# 2. Create database and schema
-mysql -u root -p < sql/01_schema.sql
+# 2. Create database
+mysql -u root -p < sql/data_dump.sql
 
-# 3. Load sample data
-mysql -u root -p < sql/02_sample_data.sql
+# 3. SQL Scripts 
+mysql -u root -p < sql/scripts.sql
 
-# 4. Apply security & optimization
-mysql -u root -p < sql/03_security_optimization.sql
 ```
 
 ### File Structure
