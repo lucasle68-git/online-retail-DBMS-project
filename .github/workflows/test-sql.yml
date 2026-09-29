@@ -1,0 +1,51 @@
+name: SQL scripts test
+
+# Runs every SQL script in order on a fresh MySQL 8.0 database
+# whenever the repository changes, to prove the project installs and runs.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: 01 - Create schema and load sample data
+        run: mysql -h 127.0.0.1 -uroot -proot < sql/01_schema_and_sample_data.sql
+
+      - name: 02 - Run 9 analytical queries
+        run: mysql -h 127.0.0.1 -uroot -proot < sql/02_analytical_queries.sql
+
+      - name: 03 - Indexing and EXPLAIN ANALYZE
+        run: mysql -h 127.0.0.1 -uroot -proot < sql/03_indexing_and_performance.sql
+
+      - name: 04 - Users, grants and masked views (test password only)
+        run: sed "s/<set-a-strong-password>/CiTest_Pass_123!/" sql/04_security_rbac.sql | mysql -h 127.0.0.1 -uroot -proot
+
+      - name: Check row counts
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot gentlemans_hub_db -N -e "
+            SELECT IF(COUNT(*) = 18, 'OK: 18 tables', 'FAIL: wrong table count')
+            FROM information_schema.tables
+            WHERE table_schema = 'gentlemans_hub_db' AND table_type = 'BASE TABLE';
+            SELECT IF(COUNT(*) = 120, 'OK: 120 orders', 'FAIL: wrong order count') FROM \`Order\`;
+            SELECT IF(COUNT(*) = 2, 'OK: 2 masked views', 'FAIL: wrong view count')
+            FROM information_schema.views WHERE table_schema = 'gentlemans_hub_db';" | tee counts.txt
+          ! grep -q FAIL counts.txt
