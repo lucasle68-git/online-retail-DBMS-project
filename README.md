@@ -1,150 +1,129 @@
-# Database Management System for Online Retail
+# Online Retail Database: Design, SQL Analytics & Access Control
 
-A comprehensive MySQL database system designed for **The Gentleman's Hub** - a men's grooming and wardrobe e-commerce platform with multi-channel operations including online retail, subscription boxes, and loyalty programs.
+A normalised MySQL database for **The Gentleman's Hub**, a fictional men's grooming and wardrobe e-commerce business that sells through three channels: online retail, subscription boxes and a loyalty programme.
+
+The project covers the full design of an operational (OLTP) database: business requirements from five departments, a 3NF relational model with 18 tables, nine analytical SQL queries, indexing and role-based access control with masked views.
+
+> Built for the MGT5492 Data Management & Engineering module (MSc Business Analytics, University of Glasgow). The business and all data are synthetic.
 
 ## Table of Contents
-- [Overview](#overview)
-- [Business Context](#business-context)
-- [Database Architecture](#database-architecture)
+- [Business Problem](#business-problem)
+- [Database Design](#database-design)
 - [Entity Relationship Diagrams](#entity-relationship-diagrams)
-- [Key Features](#key-features)
-- [Technical Implementation](#technical-implementation)
-- [Advanced SQL Queries](#advanced-sql-queries)
-- [Security Implementation](#security-implementation)
-- [Performance Optimization](#performance-optimization)
-- [Installation Guide](#installation-guide)
-- [Technologies Used](#technologies-used)
+- [Analytical SQL Queries](#analytical-sql-queries)
+- [Access Control & Data Protection](#access-control--data-protection)
+- [Indexing & Performance](#indexing--performance)
+- [How to Run](#how-to-run)
+- [Repository Structure](#repository-structure)
+- [Scope & Limitations](#scope--limitations)
 
-## Overview
+## Business Problem
 
-This project implements a production-ready relational database system that addresses critical data management challenges in e-commerce operations:
+The Gentleman's Hub runs three revenue channels on separate spreadsheets and tools, which causes:
 
-- **Data Silos**: Unified star schema integrating 3 revenue channels
-- **Data Redundancy**: 3NF normalization eliminating update anomalies
-- **Regulatory Compliance**: GDPR consent tracking & PCI-DSS payment security
-- **Access Control**: Role-Based Access Control (RBAC) with masked views
+- **Data silos**: no single view of a customer across purchases, subscriptions and loyalty points
+- **Redundancy and update anomalies**: the same product and customer details stored in several places
+- **Compliance risk**: no record of marketing consent per channel (GDPR) and card data visible to too many staff (PCI-DSS)
+- **Uncontrolled access**: every department could see every table
 
-## Business Context
+Requirements were gathered from five department heads (Finance, Marketing, Customer Service, Warehouse, Product) and turned into one integrated relational model.
 
-**The Gentleman's Hub** operates through three integrated revenue channels:
-1. **Online Retail** - Standard product purchases
-2. **Subscription Boxes** - Monthly grooming/wardrobe boxes
-3. **Loyalty Programme** - Points-based rewards system (Bronze/Silver/Gold tiers)
-
-### Stakeholder Structure
-| Role | Access Level | Description |
-|------|--------------|-------------|
-| C-Level Management | Full Admin | Strategic oversight, compliance audits |
-| Department Heads (5) | Domain-Specific | Finance, Marketing, Customer Service, Warehouse, Product |
+| Role | Access Level | Needs |
+|------|--------------|-------|
+| C-Level Management | Full admin | Strategic oversight, compliance audits |
+| Department Heads (5) | Domain-specific | Reporting and updates for their own area |
 | Operational Staff | Restricted | Daily task execution |
-| External (Customers) | Minimal | Transactional access only |
+| Customers | Minimal | Their own transactions only |
 
-## Database Architecture
+## Database Design
 
-### Star Schema Design
-The database comprises **18 entities** organized into two integrated systems:
+### Normalised relational model (3NF)
 
-**Core Transaction Flow (12 entities)**
-- Customer Domain: `Customer`, `Address`, `ConsentRecord`
-- Product Domain: `Product`, `ProductCategory`, `ComboProduct`, `ComboProductItem`
-- Transaction Domain: `Order`, `OrderItem`, `Payment`, `Delivery`, `DeliveryZone`
+**18 tables** in two groups:
 
-**Supporting Systems (6 entities)**
+**Core transaction flow (12 tables)**
+- Customer: `Customer`, `Address`, `ConsentRecord`
+- Product: `Product`, `ProductCategory`, `ComboProduct`, `ComboProductItem`
+- Transaction: `Order`, `OrderItem`, `Payment`, `Delivery`, `DeliveryZone`
+
+**Supporting systems (6 tables)**
 - Loyalty: `LoyaltyAccount`, `LoyaltyTransaction`
 - Subscription: `Subscription`
 - Inventory: `Inventory`
-- Promotions: `Coupon`, `ReturnRequest`
+- Promotions and returns: `Coupon`, `ReturnRequest`
 
-## Entity Relationship Diagrams
-### Core Transaction Flow
-![20A54EBF-370D-4522-B388-D77DECDC6A41_1_105_c](https://github.com/user-attachments/assets/88def324-bbf0-4b64-a562-3a346b718df4)
-
-### Supporting Systems
-![815E1E1D-A7B1-4077-8544-F4F1E2AB8DB0_1_105_c](https://github.com/user-attachments/assets/42aed769-b2d9-4b1d-a01f-cd8492126f89)
-
-## Key Features
-
-### Security & Compliance
-- **PCI-DSS Compliant Payment Processing**: Card tokenization, no CVV storage
-- **GDPR Consent Tracking**: Granular consent per channel (Website, Email, Mobile)
-- **Role-Based Access Control**: 5 department-specific access levels
-- **Masked Views**: Sensitive data protection for non-authorized roles
-
-### Business Intelligence Ready
-- Pre-built analytical queries for:
-  - Customer segmentation (RFM Analysis)
-  - Revenue breakdown by channel
-  - Churn risk prediction
-  - Inventory alerts
-  - Delivery performance metrics
-
-### Performance Optimized
-- Composite indexes on high-frequency JOIN operations
-- 25% query performance improvement demonstrated
-- Strategic denormalization for historical pricing
-
-## Technical Implementation
-
-### Normalization Strategy
+### Normalisation
 
 | Form | Implementation | Example |
 |------|----------------|---------|
-| **1NF** | Atomic values, no repeating groups | ConsentRecord stores each consent type as individual rows |
-| **2NF** | Eliminated partial dependencies | OrderItem references ProductID, not ProductName |
-| **3NF** | Removed transitive dependencies | Product references CategoryID, not CategoryName |
+| **1NF** | Atomic values, no repeating groups | `ConsentRecord` stores each consent type as its own row |
+| **2NF** | No partial dependencies | `OrderItem` references `ProductID`, not `ProductName` |
+| **3NF** | No transitive dependencies | `Product` references `CategoryID`, not `CategoryName` |
 
-### Justified Denormalization
-- `OrderItem.UnitPrice`: Preserves historical pricing (prevents audit issues when prices change)
-- `Order.TaxAmount/ShippingFee`: Immutable for accounting compliance
+### Justified denormalisation
+- `OrderItem.UnitPrice` keeps the price at the time of sale, so historical revenue stays correct when catalogue prices change.
+- `Order.TaxAmount` and `Order.ShippingFee` are stored as charged, for accounting audit.
 
-### Data Types & Constraints
+### Data types & constraints
 
 ```sql
 -- Monetary precision (avoids floating-point errors)
 DECIMAL(10,2) for all price fields
 
--- ENUM for controlled vocabularies (1 byte vs VARCHAR)
+-- ENUM for controlled vocabularies
 ENUM('Pending','Paid','Shipped','Cancelled','Delivered') for OrderStatus
 
--- CHECK constraints for data validation
-CardExpiryMonth CHECK (BETWEEN 1 AND 12)
+-- CHECK constraints enforce business rules
+CHECK (CardExpiryMonth BETWEEN 1 AND 12)
 CHECK (ComboPrice < StandardPrice)
+CHECK ((ProductID IS NOT NULL AND ComboID IS NULL) OR (ProductID IS NULL AND ComboID IS NOT NULL))
 ```
 
-## Advanced SQL Queries
+Full column-level documentation is in [`docs/data_dictionary.md`](docs/data_dictionary.md).
 
-The project includes **9 business intelligence queries**:
+## Entity Relationship Diagrams
 
-| # | Query | Technique | Business Purpose |
-|---|-------|-----------|------------------|
-| 1 | Top Customer Spending | CTE + DENSE_RANK() | VIP identification per loyalty tier |
-| 2 | Monthly Revenue Breakdown | CASE + Aggregation | Channel performance analysis |
-| 3 | Inventory Alert | NOT EXISTS Subquery | Overstock identification |
-| 4 | Combo Performance | GROUP BY + HAVING | Bundle optimization |
-| 5 | Delivery Gap Analysis | DATEDIFF() | SLA monitoring by zone |
-| 6 | Churn Risk Detection | LAG() Window Function | Customer retention |
-| 7 | Product Profitability | Margin Calculation | Pricing strategy |
-| 8 | Big Spender Analysis | Scalar Subquery | Upsell targeting |
-| 9 | Subscription Cohorts | COALESCE + Grouping | Retention metrics |
+### Core Transaction Flow
+![Core transaction flow ERD](https://github.com/user-attachments/assets/88def324-bbf0-4b64-a562-3a346b718df4)
 
-### Example: Churn Risk Detection
+### Supporting Systems
+![Supporting systems ERD](https://github.com/user-attachments/assets/42aed769-b2d9-4b1d-a01f-cd8492126f89)
+
+## Analytical SQL Queries
+
+Nine business questions, each answered with one query in [`sql/02_analytical_queries.sql`](sql/02_analytical_queries.sql):
+
+| # | Business question | Technique | Used by |
+|---|-------------------|-----------|---------|
+| 1 | Who are the top 5 spenders in each loyalty tier? | CTE + `DENSE_RANK()` | Marketing |
+| 2 | How does monthly revenue split across products, combos and subscriptions? | Conditional aggregation | Management |
+| 3 | Which products have high stock but no sales in 30 days? | `NOT EXISTS` subquery | Warehouse |
+| 4 | Which combo bundles earn more than £200? | `GROUP BY` + `HAVING` | Product |
+| 5 | Which delivery zones are late most often? | `DATEDIFF()` | Customer Service |
+| 6 | Which customers are at risk of churning? | CTE + recency banding | Marketing |
+| 7 | Which products have the highest margin? | Margin calculation | Finance |
+| 8 | Which orders are 50% above the average order value? | Scalar subquery | Marketing |
+| 9 | How well do subscription cohorts retain? | Cohort grouping + `COALESCE` | Finance |
+
+### Example: churn risk detection
 
 ```sql
 WITH CustomerActivity AS (
-    SELECT 
+    SELECT
         c.CustomerID,
         CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
         MAX(o.OrderDate) AS LastOrderDate,
-        DATEDIFF(CURDATE(), MAX(o.OrderDate)) AS DaysSinceLastOrder,
+        COUNT(o.OrderID) AS TotalOrders,
+        DATEDIFF('2024-12-30', MAX(o.OrderDate)) AS DaysSinceLastOrder, -- latest order date in the sample data
         la.TierLevel
     FROM Customer c
     JOIN `Order` o ON c.CustomerID = o.CustomerID
     LEFT JOIN LoyaltyAccount la ON c.CustomerID = la.CustomerID
     GROUP BY c.CustomerID, c.FirstName, c.LastName, la.TierLevel
 )
-SELECT 
-    CustomerName, TierLevel, DaysSinceLastOrder,
-    CASE 
+SELECT
+    CustomerName, TierLevel, LastOrderDate, DaysSinceLastOrder, TotalOrders,
+    CASE
         WHEN DaysSinceLastOrder >= 60 THEN 'High Risk'
         WHEN DaysSinceLastOrder >= 40 THEN 'Medium Risk'
         ELSE 'Active'
@@ -154,40 +133,20 @@ WHERE DaysSinceLastOrder >= 20
 ORDER BY DaysSinceLastOrder DESC;
 ```
 
-## Security Implementation
+## Access Control & Data Protection
 
-### User Roles & Permissions
-
-```sql
--- Example: Marketing Head (masked view access only)
-CREATE USER 'marketing_head'@'localhost' IDENTIFIED BY 'SecureMK2024!';
-GRANT SELECT ON CustomerPaymentMasked TO 'marketing_head'@'localhost';
-GRANT SELECT ON ProductPublic TO 'marketing_head'@'localhost';
--- NO direct access to Payment or Product tables
-```
-
-### Masked Views
+- **Role-based access control (RBAC)**: five department-head users, each granted only the tables they need (least privilege)
+- **Masked views**: `CustomerPaymentMasked` shows only the last four card digits; `ProductPublic` hides cost prices
+- **PCI-DSS by design**: cards stored as tokens, no CVV stored
+- **GDPR**: marketing consent recorded per channel (website, email, mobile) with dates
 
 ```sql
--- PCI-DSS Compliant Payment View
 CREATE VIEW CustomerPaymentMasked AS
-SELECT 
-    BillingID,
-    PaymentDate,
-    CONCAT('****-****-****-', CardLastFour) AS MaskedCardNumber,
-    CardBrand,
-    NULL AS CardToken  -- COMPLETELY HIDDEN
+SELECT BillingID, PaymentDate, CardBrand,
+       CONCAT('****-****-****-', CardLastFour) AS MaskedCardNumber,
+       NULL AS CardToken  -- hidden
 FROM Payment;
-
--- Public Product View (hides cost data)
-CREATE VIEW ProductPublic AS
-SELECT 
-    ProductID, ProductName, SKU, UnitPrice,
-    NULL AS CostPrice  -- COMPLETELY HIDDEN
-FROM Product;
 ```
-
-### Access Matrix
 
 | Role | Payment | Product | Customer | Orders |
 |------|---------|---------|----------|--------|
@@ -195,92 +154,76 @@ FROM Product;
 | Marketing Head | Masked | Masked | SELECT | SELECT |
 | Customer Service | Masked | Masked | SELECT | SELECT/UPDATE |
 | Warehouse Head | None | Masked | None | SELECT |
-| Product Head | None | Full (excl. CostPrice UPDATE) | None | SELECT |
+| Product Head | None | Full | None | SELECT |
 
-## Performance Optimization
+Passwords in [`sql/04_security_rbac.sql`](sql/04_security_rbac.sql) are placeholders; set your own before running.
 
-### Indexing Strategy
+## Indexing & Performance
 
-```sql
--- Composite indexes for frequent JOINs
-CREATE INDEX idx_order_customer ON `Order`(CustomerID, OrderDate);
-CREATE INDEX idx_orderitem_product ON OrderItem(ProductID, OrderID);
-CREATE INDEX idx_loyalty_customer ON LoyaltyAccount(CustomerID, TierLevel);
-CREATE INDEX idx_delivery_zone ON Delivery(ZoneID, DeliveryStatus);
-```
+Composite indexes were added on the most frequent joins and filters: `Order(CustomerID, OrderDate)`, `OrderItem(ProductID, OrderID)`, `LoyaltyAccount(CustomerID, TierLevel)` and `Delivery(ZoneID, DeliveryStatus)`.
 
-### Performance Results
+[`sql/03_indexing_and_performance.sql`](sql/03_indexing_and_performance.sql) compares the customer-spend query with and without the `Order(CustomerID, OrderDate)` index using `EXPLAIN ANALYZE`:
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Access Type | ALL (Full Scan) | ref (Index Lookup) | ✅ |
-| Rows Examined | 120 | 2 | 98% reduction |
-| Query Time | 0.0010s | 0.00081s | 25% faster |
+| | Without index | With index |
+|---|---|---|
+| Access on `Order` | Full table scan | Index lookup (`idx_customer_date`) |
+| Aggregation | Temporary table | Group aggregate, no temporary table |
 
-## Installation Guide
+With only 120 sample orders, timings are too small to be meaningful. The value of the change is the execution plan: the query no longer scans the whole table or builds a temporary table, which matters as order volume grows.
 
-### Prerequisites
-- MySQL 8.0+
-- MySQL Workbench (recommended)
+## How to Run
 
-### Setup Steps
+**Requirements:** MySQL 8.0.18+ (for `EXPLAIN ANALYZE`) and MySQL Workbench or the `mysql` command line.
+
+Run the scripts in order:
 
 ```bash
-# 1. Clone repository
 git clone https://github.com/lucasle68-git/online-retail-DBMS-project.git
 cd online-retail-DBMS-project
 
-# 2. Create database
-mysql -u root -p < sql/data_dump.sql
-
-# 3. SQL Scripts 
-mysql -u root -p < sql/scripts.sql
-
+mysql -u root -p < sql/01_schema_and_sample_data.sql      # create database, 18 tables, sample data
+mysql -u root -p < sql/02_analytical_queries.sql          # 9 business queries
+mysql -u root -p < sql/03_indexing_and_performance.sql    # indexes + before/after plans
+mysql -u root -p < sql/04_security_rbac.sql               # users, grants, masked views (set passwords first)
 ```
 
-### File Structure
+In MySQL Workbench: open each file with **File → Open SQL Script** and run it with the lightning-bolt icon, in the same order.
+
+## Repository Structure
+
 ```
-database-management-retail/
+online-retail-DBMS-project/
 ├── README.md
+├── LICENSE
 ├── sql/
-│   ├── 01_schema.sql          # Database schema (18 tables) & Advanced query for analytics
-│   ├── 02_sample_data.sql     # Sample data (~50+ rows/table)
-│   └── 03_security_optimization.sql  # RBAC & indexes
-├── docs/
-│   └── data_dictionary.md     # Complete column documentation
+│   ├── 01_schema_and_sample_data.sql     # database, 18 tables, constraints, sample data
+│   ├── 02_analytical_queries.sql         # 9 business queries
+│   ├── 03_indexing_and_performance.sql   # composite indexes + EXPLAIN ANALYZE
+│   └── 04_security_rbac.sql              # users, grants, masked views
+└── docs/
+    └── data_dictionary.md                # column-level documentation
 ```
 
-## Technologies Used
+## Scope & Limitations
+
+- This is an **operational (OLTP) database**, optimised for recording transactions correctly. Heavy reporting would normally run on a separate dimensional model (star schema) in a data warehouse.
+- The business and all data are synthetic (about 50–120 rows per table), so performance results show changes in execution plans rather than realistic timings.
+- Next step: a separate BI project building an ETL pipeline, a star-schema warehouse and Power BI dashboards on real retail data.
+
+## Technologies
 
 | Technology | Purpose |
 |------------|---------|
-| ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white) | Relational Database (InnoDB engine) |
-| ![SQL](https://img.shields.io/badge/SQL-Advanced-orange) | CTEs, Window Functions, Subqueries |
+| ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white) | Relational database (InnoDB) |
+| ![SQL](https://img.shields.io/badge/SQL-Advanced-orange) | CTEs, window functions, subqueries, views, RBAC |
 
 ## Key Learnings
 
-- **Star Schema Design**: Optimizing for analytical queries while maintaining transactional integrity
-- **3NF vs Denormalization**: Balancing normalization with practical requirements (historical pricing)
-- **Security by Design**: Implementing least-privilege access with masked views
-- **Performance Tuning**: Strategic indexing based on query patterns
-
-## Future Enhancements
-
-- [ ] Integration with Apache Airflow for automated reporting
-- [ ] Machine Learning for dynamic delivery predictions
-- [ ] Real-time inventory alerts via Slack/Teams integration
-- [ ] Data warehouse layer for advanced analytics
-
----
+- **3NF vs denormalisation**: normalising to remove anomalies, then denormalising only where history or audit requires it
+- **Security by design**: least-privilege access and masked views instead of trusting every user with raw tables
+- **Performance tuning**: choosing indexes from real query patterns and checking the execution plan, not just timings
 
 ## Contact
 
-**Lucas Le** - MSc Business Analytics @ University of Glasgow
-
-Glasgow, Scotland  
-luong.ldd.work@gmail.com  
-[LinkedIn](https://www.linkedin.com/in/lucasle68/)
-
----
-
-*This project was developed as part of MGT5492 - Data Management & Engineering coursework.*
+**Danh Duc Luong (Lucas) Le** · MSc Business Analytics, University of Glasgow
+luong.ldd.work@gmail.com · [LinkedIn](https://www.linkedin.com/in/lucasle68/)
