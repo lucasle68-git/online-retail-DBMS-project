@@ -1,0 +1,42 @@
+CustomerName,TierLevel,LastOrderDate,DaysSinceLastOrder,TotalOrders,ChurnRiskLevel
+James Anderson,Bronze,2024-10-15 10:32:00,76,1,High Risk
+Mohammed Ali,Silver,2024-10-16 14:24:00,75,1,High Risk
+Sarah Williams,Bronze,2024-10-18 09:47:00,73,1,High Risk
+Evie Reed,Silver,2024-10-19 10:17:00,72,1,High Risk
+Alfie Cook,Silver,2024-10-21 14:52:00,70,1,High Risk
+Rosie Murphy,Silver,2024-10-27 09:07:00,64,1,High Risk
+Arthur Bailey,Silver,2024-10-29 13:22:00,62,1,High Risk
+Oliver Brown,Bronze,2024-10-30 09:17:00,61,1,High Risk
+Jacob Cooper,Silver,2024-11-02 16:12:00,58,1,Medium Risk
+Archie Cox,Bronze,2024-11-06 14:57:00,54,1,Medium Risk
+Noah Roberts,Bronze,2024-11-07 11:42:00,53,1,Medium Risk
+Priya Patel,Gold,2024-11-08 10:32:00,52,2,Medium Risk
+Sophie Taylor,Gold,2024-11-10 11:47:00,50,2,Medium Risk
+Freddie Ward,Bronze,2024-11-10 15:47:00,50,1,Medium Risk
+Finley Peterson,Silver,2024-11-14 13:32:00,46,1,Medium Risk
+Ava Young,Silver,2024-11-17 14:52:00,43,1,Medium Risk
+Sebastian Ramirez,Bronze,2024-11-18 15:22:00,42,1,Medium Risk
+Charlie King,Bronze,2024-11-19 11:17:00,41,1,Medium Risk
+Maya James,Silver,2024-11-20 10:47:00,40,1,Medium Risk
+Theodore Watson,Silver,2024-11-22 14:12:00,38,1,Active
+Aisha Khan,Silver,2024-11-22 14:17:00,38,2,Active
+George Green,Silver,2024-11-23 10:02:00,37,1,Active
+Harry Lewis,Silver,2024-11-24 13:12:00,36,2,Active
+Luna Brooks,Gold,2024-11-24 11:37:00,36,1,Active
+Harrison Kelly,Bronze,2024-11-26 16:02:00,34,1,Active
+Ella Nelson,Silver,2024-11-29 15:07:00,31,2,Active
+Maxwell Price,Silver,2024-11-30 13:52:00,30,1,Active
+Olivia Rivera,Gold,2024-11-30 09:22:00,30,2,Active
+Willow Bennett,Gold,2024-12-02 09:17:00,28,1,Active
+Freya Mitchell,Gold,2024-12-03 14:17:00,27,1,Active
+Liam O'Connor,Bronze,2024-12-04 15:42:00,26,2,Active
+David Thompson,Silver,2024-12-05 16:15:00,25,2,Active
+Lily Adams,Gold,2024-12-06 15:07:00,24,5,Active
+Jack Hall,Bronze,2024-12-06 11:07:00,24,6,Active
+Amelia Evans,Gold,2024-12-06 11:42:00,24,2,Active
+Leo Bell,Bronze,2024-12-08 10:55:00,22,2,Active
+William Perez,Bronze,2024-12-08 14:32:00,22,2,Active
+Grace Scott,Gold,2024-12-08 09:37:00,22,3,Active
+Lucas Turner,Silver,2024-12-09 11:52:00,21,1,Active
+Daniel Rogers,Bronze,2024-12-10 10:57:00,20,2,Active
+Isla Jones,Silver,2024-12-10 13:40:00,20,2,Active

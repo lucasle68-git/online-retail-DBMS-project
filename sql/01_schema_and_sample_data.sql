@@ -1,3 +1,8 @@
+-- 01_schema_and_sample_data.sql
+-- Creates the database, 18 tables and sample data.
+-- WARNING: the next line deletes any existing gentlemans_hub_db so the script can be re-run from a clean state.
+DROP DATABASE IF EXISTS gentlemans_hub_db;
+
 -- CREATE DATABASE
 CREATE DATABASE IF NOT EXISTS gentlemans_hub_db
 CHARACTER SET utf8mb4

@@ -77,8 +77,9 @@ AND NOT EXISTS (
     FROM OrderItem oi
     JOIN `Order` o ON oi.OrderID = o.OrderID
     WHERE oi.ProductID = p.ProductID
-    AND o.OrderDate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-);
+    AND o.OrderDate >= DATE_SUB('2024-12-30', INTERVAL 30 DAY) -- 30 Dec 2024 is the latest order date in the sample data
+)
+ORDER BY i.QuantityOnHand DESC;
 
 -- 4. High-value combo performance
 -- Business Context: Which "Combo" bundles are generating high revenue and have high timesold
@@ -162,7 +163,7 @@ SELECT
     o.OrderID,
     CONCAT(c.FirstName, ' ', c.LastName) as Customer,
     o.TotalAmount,
-    (SELECT AVG(TotalAmount) FROM `Order`) as AverageOrderStandard -- Scalar Subquery
+    ROUND((SELECT AVG(TotalAmount) FROM `Order`), 2) as AverageOrderValue -- Scalar Subquery
 FROM `Order` o
 JOIN Customer c ON o.CustomerID = c.CustomerID
 WHERE o.TotalAmount > (SELECT AVG(TotalAmount) FROM `Order`) * 1.5 -- 50% higher than average
